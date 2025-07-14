@@ -1,4 +1,4 @@
-#Redis code
+# Redis code images
 from functools import wraps
 import jwt
 from flask import Flask, jsonify, request, abort
