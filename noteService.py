@@ -12,7 +12,6 @@ algorithm = "HS256"
 # noteDict = {}
 # noteCounters = {}
 
-# connect to local Redis
 r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
 
 
@@ -59,7 +58,6 @@ def getNotes():
 def getNote(noteId: int):
     userId = request.current_user
     key = f"user:{userId}:note:{noteId}"
-    # Changed: fetch the hash; r.hgetall returns {} if not found
     note = r.hgetall(key)
     if not note:
         abort(404, description="Note not found")
@@ -80,7 +78,6 @@ def createNote():
     noteId = r.incr(f"user:{userId}:nextId")
     # print(noteId)
 
-    # Changed: store note fields in a Redis hash
     r.hset(f"user:{userId}:note:{noteId}", mapping={
         "id": noteId,
         "title": title,
@@ -95,13 +92,13 @@ def createNote():
 def updateNote(noteId: int):
     userId = request.current_user
     key = f"user:{userId}:note:{noteId}"
-    # Changed: ensure the note exists in Redis
+
     if not r.exists(key):
         abort(404, description="Note not found")
 
     data = request.get_json()
     mapping = {}
-    # Changed: only update provided fields
+
     if "title" in data:
         mapping["title"] = data["title"]
     if "content" in data:
@@ -117,7 +114,7 @@ def updateNote(noteId: int):
 def delete_note(noteId):
     userId = request.current_user
     key = f"user:{userId}:note:{noteId}"
-    # Changed: delete the key; r.delete returns number of keys removed
+
     deleted = r.delete(key)
     if deleted == 0:
         abort(404, description="Note not found")
