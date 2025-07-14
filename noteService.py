@@ -1,19 +1,18 @@
-#redis code
+#Redis code
 from functools import wraps
 import jwt
 from flask import Flask, jsonify, request, abort
-import redis  # Added: Redis client import to replace in-memory dicts
+import redis
 
 app = Flask(__name__)
 
 secretKey = "my-super‑secret‑key"
 algorithm = "HS256"
 
-# Changed: removed the old in-memory stores
 # noteDict = {}
 # noteCounters = {}
 
-# Added: connect to local Redis (persistent, shared across restarts)
+# connect to local Redis
 r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
 
 
@@ -47,9 +46,11 @@ def home():
 @token_required
 def getNotes():
     userId = request.current_user
-    # Changed: fetch all Redis keys for this user's notes
     keys = r.keys(f"user:{userId}:note:*")
-    notes = [r.hgetall(key) for key in keys]
+    notes = []
+    for key in keys:
+        note = r.hgetall(key)
+        notes.append(note)
     return jsonify(notes), 200
 
 
@@ -76,8 +77,8 @@ def createNote():
     if not title or not content:
         abort(400, description="Both 'title' and 'content' are required")
 
-    # Changed: use Redis INCR to get a unique per-user note ID
     noteId = r.incr(f"user:{userId}:nextId")
+    # print(noteId)
 
     # Changed: store note fields in a Redis hash
     r.hset(f"user:{userId}:note:{noteId}", mapping={
